@@ -1,0 +1,5 @@
+packages:
+  - shell
+  - tasks
+  - users
+  - query-lab

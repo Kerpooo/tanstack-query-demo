@@ -1,0 +1,52 @@
+import '../styles.css'
+import '@fontsource-variable/hanken-grotesk'
+import '@fontsource-variable/spline-sans-mono'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import { AppLayout } from '../navigation/AppLayout'
+import { RemoteBoundary } from '../remotes/RemoteBoundary'
+import { QueryLabApp, TasksApp, UsersApp } from '../remotes/loaders'
+import { queryClient } from '../shared/query/queryClient'
+
+// Los prefijos (/tasks, /users) deben coincidir con los `paths.ts` de cada remote.
+export default function App() {
+  return (
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/tasks" replace />} />
+            <Route
+              path="/tasks/*"
+              element={
+                <RemoteBoundary name="tasks">
+                  <TasksApp />
+                </RemoteBoundary>
+              }
+            />
+            <Route
+              path="/users/*"
+              element={
+                <RemoteBoundary name="users">
+                  <UsersApp />
+                </RemoteBoundary>
+              }
+            />
+            <Route
+              path="/query/*"
+              element={
+                <RemoteBoundary name="query-lab">
+                  <QueryLabApp />
+                </RemoteBoundary>
+              }
+            />
+            <Route path="*" element={<p className="text-sm">Página no encontrada.</p>} />
+          </Routes>
+        </AppLayout>
+        {/* Panel para ver la caché; se elimina solo en builds de producción. */}
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </BrowserRouter>
+  )
+}
