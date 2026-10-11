@@ -30,7 +30,7 @@ El repositorio tiene **tres proyectos independientes**, cada uno con su propio `
 | Carpeta | Qué es | Tecnologías |
 |---|---|---|
 | [`api/`](api) | API REST: `/tasks`, `/users` (con paginación opcional) y `/demo/*` para las demos | Hono, Zod, `@libsql/client` |
-| [`mfe/`](mfe) | Workspace de pnpm con `shell`, `tasks`, `users` y `query-lab` | React 19, webpack 5 + Module Federation, TanStack Query 5, React Router, shadcn/ui, Tailwind 4 |
+| [`mfe/`](mfe) | Workspace (npm o pnpm) con `shell`, `tasks`, `users` y `query-lab` | React 19, webpack 5 + Module Federation, TanStack Query 5, React Router, shadcn/ui, Tailwind 4 |
 | [`e2e/`](e2e) | Tests end-to-end | Playwright (Chrome) |
 
 Cada microfrontend organiza `src/` por dominio (*screaming architecture*): `users/`, `tasks/`… y dentro, `api/`, `hooks/`, `components/` y `pages/`. Lo transversal vive en `shared/`.
@@ -38,31 +38,32 @@ Cada microfrontend organiza `src/` por dominio (*screaming architecture*): `user
 ## Requisitos
 
 - **Node.js** 22 o superior (probado con 26)
-- **pnpm** (la versión exacta está fijada en `packageManager`). Usa `pnpm exec` / `pnpm dlx` en lugar de `npx`.
+- **npm** (incluido con Node) o **pnpm**: el proyecto funciona con los dos. Los ejemplos usan npm; con pnpm basta con cambiar `npm` por `pnpm` y `npx` por `pnpm exec`.
 - **Google Chrome**, solo para los tests e2e
 
 ## Puesta en marcha local
 
 ```bash
-cd api && pnpm install
-cd ../mfe && pnpm install
+cd api && npm install
+cd ../mfe && npm install
+cd ../e2e && npm install
 ```
 
 Levanta la API (puerto 3000; crea `api/data/app.db` con usuarios de ejemplo):
 
 ```bash
-cd api && pnpm dev
+cd api && npm run dev
 ```
 
 En otra terminal, levanta los cuatro microfrontends:
 
 ```bash
-cd mfe && pnpm dev
+cd mfe && npm run dev
 ```
 
 Abre **http://localhost:4000**. Cada remote también funciona solo (`:4001`, `:4002`, `:4003`).
 
-> `pnpm install` puede mostrar `ERR_PNPM_IGNORED_BUILDS` por `esbuild`; es inofensivo.
+> Hay dos lockfiles por proyecto: `package-lock.json` (npm) y `pnpm-lock.yaml` (pnpm). Los scripts de instalación de `esbuild` y `workerd` están aprobados en `allowScripts` (npm) y `allowBuilds` (pnpm).
 
 ### Variables de entorno
 
@@ -71,25 +72,25 @@ Abre **http://localhost:4000**. Cada remote también funciona solo (`:4001`, `:4
 | API | `api/.env` (no se versiona) | `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN` para usar Turso; si no existen, usa `DB_PATH` (por defecto `data/app.db`). `PORT` cambia el puerto. |
 | Microfrontends | `mfe/.env.development` / `mfe/.env.production` | `API_URL`, `TASKS_URL`, `USERS_URL`, `QUERY_LAB_URL` |
 
-`pnpm dev` usa `.env.development` y `pnpm build` usa `.env.production`. Las variables definidas en el entorno tienen prioridad sobre los archivos, y el build falla si falta alguna. Las URLs se fijan al compilar: si cambias una, vuelve a compilar el paquete que la usa.
+`npm run dev` usa `.env.development` y `npm run build` usa `.env.production`. Las variables definidas en el entorno tienen prioridad sobre los archivos, y el build falla si falta alguna. Las URLs se fijan al compilar: si cambias una, vuelve a compilar el paquete que la usa.
 
 ## Tests
 
 ```bash
-cd api && pnpm test
+cd api && npm test
 ```
 
 ```bash
-cd mfe && pnpm test
+cd mfe && npm test
 ```
 
 ```bash
-cd e2e && pnpm test
+cd e2e && npm test
 ```
 
 - **Unitarios** (Vitest): la API usa una base `:memory:` por test; los microfrontends usan jsdom + Testing Library con la capa `api` simulada.
-- **E2E** (Playwright con Chrome): levantan la API y los microfrontends si no están corriendo, con una base propia (`e2e/.data/e2e.db`). Si ya tienes una API corriendo, se reutiliza; ciérrala antes para una ejecución limpia.
-- **Tipos**: webpack no verifica tipos al compilar; usa `pnpm typecheck` en `api/` y `mfe/`.
+- **E2E** (Playwright con Chrome): levantan la API y los microfrontends si no están corriendo, con una base propia (`e2e/.data/e2e.db`). Levantan los servidores con el mismo gestor con el que lanzas los tests. Si ya tienes una API corriendo, se reutiliza; ciérrala antes para una ejecución limpia.
+- **Tipos**: webpack no verifica tipos al compilar; usa `npm run typecheck` en `api/` y `mfe/`.
 
 ## Documentación interactiva de TanStack Query
 
@@ -134,21 +135,21 @@ Todo se publica en Cloudflare Workers con wrangler, que ya está instalado como 
 La primera vez, inicia sesión y carga los secretos de Turso de la API:
 
 ```bash
-cd api && pnpm exec wrangler login
+cd api && npx wrangler login
 ```
 
 ```bash
-cd api && pnpm exec wrangler secret bulk .env
+cd api && npx wrangler secret bulk .env
 ```
 
 Para desplegar después de cada cambio:
 
 ```bash
-cd api && pnpm run deploy
+cd api && npm run deploy
 ```
 
 ```bash
-cd mfe && pnpm run deploy
+cd mfe && npm run deploy
 ```
 
 - La API corre como Worker con [`api/src/worker.ts`](api/src/worker.ts); en local se sigue usando [`api/src/index.ts`](api/src/index.ts) con Node.
@@ -158,7 +159,7 @@ cd mfe && pnpm run deploy
 
 ## Agregar un microfrontend nuevo
 
-1. Crea el paquete en `mfe/` y agrégalo a `pnpm-workspace.yaml`.
+1. Crea el paquete en `mfe/` y agrégalo a `workspaces` en `mfe/package.json` (npm) y a `pnpm-workspace.yaml` (pnpm).
 2. Expón su componente raíz con `ModuleFederationPlugin` y declara los mismos módulos `shared` que el resto.
 3. En el shell: agrega la entrada en `remotes` (`shell/webpack.config.js`), su URL en `mfe/env.js` y en los `.env.*`, la declaración de tipos en `remotes/remotes.d.ts`, el `lazy` en `remotes/loaders.ts`, la `Route` en `app/App.tsx` y el enlace en `MainNav`.
 4. Agrega su `wrangler.jsonc` y el script `deploy` para publicarlo.

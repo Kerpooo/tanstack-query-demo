@@ -7,10 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 POC de microfrontends con Module Federation y React Query. Son **tres proyectos independientes** (cada uno con su propio lockfile y `node_modules`):
 
 - `api/` — API REST con Hono y persistencia en **SQLite** (sin autenticación).
-- `mfe/` — workspace de pnpm con cuatro paquetes: `shell` (host) y los remotes `tasks`, `users` y `query-lab` (documentación interactiva de TanStack Query).
+- `mfe/` — workspace (npm o pnpm) con cuatro paquetes: `shell` (host) y los remotes `tasks`, `users` y `query-lab` (documentación interactiva de TanStack Query).
 - `e2e/` — tests end-to-end con Playwright (Chrome).
 
-Se usa **pnpm** (nunca `npx`: el `package.json` fija pnpm vía `devEngines`/`packageManager` y `npx` falla con `EBADDEVENGINES`). TypeScript es obligatorio en todo.
+El proyecto debe funcionar con **npm y con pnpm** (los comandos de abajo usan pnpm; con npm, `npm run <script>` y `npx`). TypeScript es obligatorio en todo.
 
 ## Requisitos permanentes
 
@@ -22,7 +22,7 @@ Aplican a todo el ciclo de vida del proyecto: al agregar o cambiar funcionalidad
 - **Screaming architecture en cada MFE**: las carpetas de primer nivel de `src/` nombran el dominio (`users/`, `tasks/`), no el tipo técnico. Ver "Microfrontends".
 - **Documentación interactiva de TanStack Query** en `mfe/query-lab`: cada concepto nuevo lleva su `docs.md` (markdown con código comentado, en español neutro) **arriba** y la demo funcionando **debajo**.
 - **Base de datos SQLite con Turso/libSQL** (`@libsql/client`): archivo local en desarrollo y tests, Turso remoto en producción.
-- Todo con **pnpm** (ejecutar herramientas con `pnpm exec` / `pnpm dlx`) y en **TypeScript**.
+- Compatible con **npm y pnpm**: cada proyecto versiona `package-lock.json` y `pnpm-lock.yaml`; al cambiar dependencias hay que actualizar **ambos** (`npm install` y `pnpm install`). Los scripts no deben usar comandos exclusivos de un gestor (`pnpm --recursive`, `--filter`…): los de `mfe/` pasan por `scripts/run-all.mjs`. Todo en **TypeScript**.
 
 Estado de verificación: Chrome está instalado en este WSL (`/usr/bin/google-chrome`) y la suite completa de `e2e/` pasa (60/60, incluidos los de navegador). Si Chrome no estuviera disponible, instalarlo con `cd e2e && pnpm exec playwright install --with-deps chrome` (requiere sudo).
 
@@ -54,7 +54,7 @@ pnpm exec playwright test tests/shell.spec.ts # un solo spec de navegador
 
 Puertos: API 3000, shell 4000, tasks 4001, users 4002, query-lab 4003. Para ver la app hay que levantar la API y `mfe`, y abrir `http://localhost:4000`.
 
-`pnpm install` muestra `ERR_PNPM_IGNORED_BUILDS` por `esbuild` (scripts de build bloqueados por pnpm). Es inofensivo; `pnpm approve-builds` lo silencia.
+Ambos gestores bloquean los scripts de instalación de dependencias: `esbuild` y `workerd` (los necesita wrangler) están aprobados en `allowBuilds` de `pnpm-workspace.yaml` (pnpm) y en `allowScripts` de `package.json` (npm 11+). Si aparece otra dependencia con build, agregarla en ambos.
 
 ## Despliegue (Cloudflare Workers)
 
@@ -87,8 +87,9 @@ Cuenta `kevvek.workers.dev`; todo se despliega con wrangler (devDependency en `a
   ```
   `tasks` sigue el mismo patrón (`tasks/`); el `shell` usa `app/`, `navigation/`, `remotes/` y `shared/`. Los tests van junto al código que prueban.
 - **Rutas**: el shell es dueño del `BrowserRouter` y monta cada remote bajo un prefijo (`/tasks/*`, `/users/*`). Cada remote declara sus rutas relativas en su `*App.tsx` y usa rutas **absolutas** desde `paths.ts` para enlazar; por eso el prefijo debe coincidir entre `shell/src/app/App.tsx` y `paths.ts` del remote. `users` tiene tres páginas: listado (`/users`), crear (`/users/new`) y editar (`/users/:id/edit`); eliminar es un `AlertDialog` en el listado.
-- **Shell** (`shell/webpack.config.js`) declara `remotes` (`tasks@${TASKS_URL}/remoteEntry.js`, `users@${USERS_URL}/...`, `queryLab@${QUERY_LAB_URL}/...`; el nombre del contenedor debe ser un identificador válido, por eso `queryLab` y no `query-lab`), los carga con `lazy` en `remotes/loaders.ts`, los envuelve con `RemoteBoundary` (Suspense + error boundary) y declara sus tipos en `remotes/remotes.d.ts`. Un remote nuevo requiere: carpeta en `pnpm-workspace.yaml`, entrada en `remotes`, declaración de módulo, `lazy` en `loaders.ts`, `Route` en `App.tsx` y enlace en `MainNav`.
+- **Shell** (`shell/webpack.config.js`) declara `remotes` (`tasks@${TASKS_URL}/remoteEntry.js`, `users@${USERS_URL}/...`, `queryLab@${QUERY_LAB_URL}/...`; el nombre del contenedor debe ser un identificador válido, por eso `queryLab` y no `query-lab`), los carga con `lazy` en `remotes/loaders.ts`, los envuelve con `RemoteBoundary` (Suspense + error boundary) y declara sus tipos en `remotes/remotes.d.ts`. Un remote nuevo requiere: carpeta en `pnpm-workspace.yaml` y en `workspaces` de `mfe/package.json`, entrada en `remotes`, declaración de módulo, `lazy` en `loaders.ts`, `Route` en `App.tsx` y enlace en `MainNav`.
 - **Remotes** exponen su `*App` (`./TasksApp`, `./UsersApp`) por `remoteEntry.js` y hablan con la API con axios (`<dominio>/api/*.api.ts`). La URL base sale de `process.env.API_URL` (inyectada con `DefinePlugin`; webpack 5 no define `process` en el navegador).
+- **Scripts del workspace**: `mfe/scripts/run-all.mjs <script> [--parallel]` ejecuta el script en cada paquete de `workspaces` (en ese orden) con el gestor que lo invocó (detectado por `npm_config_user_agent`), antepone el nombre del paquete a cada línea y se detiene al primer fallo (salvo `--parallel`, que usa `dev`). Los e2e (`playwright.config.ts`) detectan el gestor igual para levantar los servidores.
 - **URLs por entorno**: `mfe/env.js` (`loadEnv(mode)`) lee `API_URL`, `TASKS_URL`, `USERS_URL` y `QUERY_LAB_URL` de `mfe/.env.development` (`pnpm dev`) o `mfe/.env.production` (`pnpm build`); las variables del entorno (panel del hosting) tienen prioridad y el build falla si falta alguna. Los cuatro `webpack.config.js` son funciones `(env, argv)` que usan `argv.mode`. Ambos archivos se versionan (no contienen secretos); el `.env` de `api/` sigue ignorado.
 - **Bootstrap asíncrono**: `src/index.ts` solo hace `import('./bootstrap')`; es requisito de Module Federation. En los remotes, `bootstrap.tsx` solo corre en modo standalone (`:4001`/`:4002`) y crea su propio router y `QueryClientProvider`; dentro del shell se usan los del shell.
 - **Módulos compartidos** (`singleton` en los tres `webpack.config.js`): `react`, `react-dom`, `react-router` y `@tanstack/react-query`. Si se agrega una dependencia compartida, declararla en `shared` de todos los paquetes que la usen. El `QueryClient` único vive en `shell/src/shared/query/queryClient.ts`.
@@ -106,7 +107,7 @@ Cuenta `kevvek.workers.dev`; todo se despliega con wrangler (devDependency en `a
 - `shared/query/keys.ts` centraliza las claves de caché. `['users']` es la misma que usa el mfe `users` (caché compartida por el `QueryClient` único del shell); el resto lleva prefijo `'lab'`.
 - El código que se muestra en cada `docs.md` se copia a mano de `hooks.ts`: si se cambia el hook, hay que actualizar el markdown. `src/docs.test.ts` exige por concepto: `### ¿Qué es?`, `### Qué observar en la demo`, al menos un bloque ```ts con 3+ líneas de comentario y ausencia de voseo.
 - Los tests mockean `@/shared/api/endpoints` con `src/test/mockEndpoints.ts` (el `sleep` de las demos se vuelve inmediato) y comparten `src/test/helpers.tsx` (`deferred`, `expectDocsAboveDemo`, `demo()`). Las consultas deben acotarse con `demo()`: la documentación repite palabras de la demo.
-- `ReactQueryDevtools` está montado en el shell (`app/App.tsx`) para ver la caché mientras se explica.
+- `ReactQueryDevtools` está montado en el shell (`app/App.tsx`) para ver la caché mientras se explica. Se importa desde `@tanstack/react-query-devtools/production` para que también aparezca en el despliegue (el import normal se vuelve `null` en producción); el `setup.ts` de tests del shell simula `window.matchMedia` por eso.
 - `removeQueries` no avisa a los componentes que ya observan esa consulta; las demos usan `resetQueries` cuando hay que vaciar la caché de forma visible.
 
 ### E2E (`e2e/`)

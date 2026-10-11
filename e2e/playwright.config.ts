@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 // Base SQLite propia de los e2e: no toca los datos de desarrollo (api/data).
 const E2E_DB = fileURLToPath(new URL('.data/e2e.db', import.meta.url))
+// Levanta los servidores con el mismo gestor que lanzó los tests (npm o pnpm).
+const PM = (process.env.npm_config_user_agent ?? '').startsWith('pnpm') ? 'pnpm' : 'npm'
 
 export default defineConfig({
   testDir: './tests',
@@ -24,7 +26,7 @@ export default defineConfig({
   webServer: [
     {
       // Parte siempre de una base limpia (con los usuarios de ejemplo).
-      command: `rm -f "${E2E_DB}" "${E2E_DB}-wal" "${E2E_DB}-shm"; pnpm dev`,
+      command: `rm -f "${E2E_DB}" "${E2E_DB}-wal" "${E2E_DB}-shm"; ${PM} run dev`,
       cwd: '../api',
       // TURSO_DATABASE_URL vacío: evita que un api/.env apunte los e2e a la base remota.
       env: { DB_PATH: E2E_DB, TURSO_DATABASE_URL: '' },
@@ -32,7 +34,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: 'pnpm dev',
+      command: `${PM} run dev`,
       cwd: '../mfe',
       url: 'http://localhost:4000',
       reuseExistingServer: !process.env.CI,

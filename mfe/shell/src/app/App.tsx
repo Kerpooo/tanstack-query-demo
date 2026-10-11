@@ -2,7 +2,8 @@ import '../styles.css'
 import '@fontsource-variable/hanken-grotesk'
 import '@fontsource-variable/spline-sans-mono'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+// Entrada `/production`: la normal se reemplaza por `null` cuando NODE_ENV es production.
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools/production'
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router'
 import { AppLayout } from '../navigation/AppLayout'
 import { RemoteBoundary } from '../remotes/RemoteBoundary'
@@ -55,7 +56,7 @@ export default function App() {
             />
           </Routes>
         </AppLayout>
-        {/* Panel para ver la caché; se elimina solo en builds de producción. */}
+        {/* Panel para ver la caché; se mantiene también en producción porque es parte de la demo. */}
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </BrowserRouter>
