@@ -56,6 +56,14 @@ Puertos: API 3000, shell 4000, tasks 4001, users 4002, query-lab 4003. Para ver 
 
 `pnpm install` muestra `ERR_PNPM_IGNORED_BUILDS` por `esbuild` (scripts de build bloqueados por pnpm). Es inofensivo; `pnpm approve-builds` lo silencia.
 
+## Despliegue (Cloudflare Workers)
+
+Cuenta `kevvek.workers.dev`; todo se despliega con wrangler (devDependency en `api/` y en `mfe/`; requiere `pnpm exec wrangler login`).
+
+- **API**: `cd api && pnpm run deploy` → `https://tanstack-query-demo-api.kevvek.workers.dev`. Entrada `src/worker.ts` (crea la app en la primera petición con los secretos de `env`; `index.ts` queda para Node local) y `wrangler.jsonc` con `nodejs_compat`. Secretos: `pnpm exec wrangler secret bulk .env` (o `secret put TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`). `wrangler dev` también funciona y lee `api/.env`. En Workers `@libsql/client` resuelve a su versión web (solo URLs `libsql://`/`https://`, no archivos).
+- **Microfrontends**: `cd mfe && pnpm run deploy` compila en modo production (lee `mfe/.env.production`) y despliega los cuatro como Workers de solo assets (`tanstack-query-demo-<paquete>`). `not_found_handling: "single-page-application"` en cada `wrangler.jsonc` resuelve los deep links. Si cambia una URL, hay que volver a desplegar quien la usa (se fija al compilar).
+- `/demo/flaky` guarda su contador en memoria: en Workers cada isolate tiene el suyo, así que puede comportarse de forma irregular.
+
 ## Arquitectura
 
 ### API (`api/src`)

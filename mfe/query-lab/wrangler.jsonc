@@ -1,0 +1,8 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "tanstack-query-demo-query-lab",
+  "compatibility_date": "2026-10-01",
+  // Solo archivos estáticos (sin Worker). "single-page-application" responde
+  // index.html en las rutas del router (deep links como /users/1/edit).
+  "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+}

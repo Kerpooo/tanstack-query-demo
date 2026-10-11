@@ -3,3 +3,6 @@ packages:
   - tasks
   - users
   - query-lab
+allowBuilds:
+  esbuild: true
+  workerd: true

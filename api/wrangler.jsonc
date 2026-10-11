@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "tanstack-query-demo-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-01",
+  // node:crypto (randomUUID) y node:fs (solo se usa con archivos locales).
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true }
+  // Secretos (no van aquí): wrangler secret put TURSO_DATABASE_URL / TURSO_AUTH_TOKEN
+}
