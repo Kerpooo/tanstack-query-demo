@@ -2,3 +2,11 @@ node_modules/
 dist/
 *.db
 .DS_Store
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+# Las URLs públicas de mfe no son secretas: se versionan por entorno.
+!mfe/.env.development
+!mfe/.env.production
