@@ -6,7 +6,7 @@ vi.mock('axios', () => ({ default: { create: () => http } }))
 
 import { tasksApi } from './tasks.api'
 
-const task: Task = { id: 'a', title: 'T', done: false, createdAt: '' }
+const task: Task = { id: 'a', title: 'T', done: false, createdAt: '', assignees: [] }
 
 beforeEach(() => vi.resetAllMocks())
 
@@ -27,6 +27,18 @@ describe('tasksApi', () => {
     http.patch.mockResolvedValue({ data: task })
     await tasksApi.toggle(task)
     expect(http.patch).toHaveBeenCalledWith('/tasks/a', { done: true })
+  })
+
+  it('assign reemplaza los asignados con PATCH', async () => {
+    http.patch.mockResolvedValue({ data: task })
+    await tasksApi.assign('a', ['u1', 'u2'])
+    expect(http.patch).toHaveBeenCalledWith('/tasks/a', { assigneeIds: ['u1', 'u2'] })
+  })
+
+  it('listUsers pide GET /users', async () => {
+    http.get.mockResolvedValue({ data: [] })
+    expect(await tasksApi.listUsers()).toEqual([])
+    expect(http.get).toHaveBeenCalledWith('/users')
   })
 
   it('remove llama DELETE', async () => {

@@ -3,9 +3,9 @@ import { SEED_USER_COUNT } from './db.js'
 import { createTestApp, jsonRequest } from './test-utils.js'
 import type { User } from './users.js'
 
-let app: ReturnType<typeof createTestApp>
-beforeEach(() => {
-  app = createTestApp({ seed: true })
+let app: Awaited<ReturnType<typeof createTestApp>>
+beforeEach(async () => {
+  app = await createTestApp({ seed: true })
 })
 
 const create = (body: unknown) => app.request('/users', jsonRequest('POST', body))
@@ -20,7 +20,7 @@ describe('usuarios', () => {
   })
 
   it('arranca vacío si no se pide semilla', async () => {
-    const empty = createTestApp()
+    const empty = await createTestApp()
     expect(await (await empty.request('/users')).json()).toEqual([])
   })
 

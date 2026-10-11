@@ -9,7 +9,7 @@ import type { UserInput } from '../users.types'
 
 const schema = z.object({
   name: z.string().trim().min(1, 'El nombre es obligatorio').max(100),
-  email: z.email('Ingrese un correo válido'),
+  email: z.email('Escribe un correo válido, por ejemplo nombre@dominio.com'),
 })
 
 type FieldErrors = Partial<Record<keyof UserInput, string>>
@@ -44,16 +44,22 @@ export function UserForm({ initialValues, submitLabel, pending, serverError, onS
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+    <form onSubmit={handleSubmit} noValidate className="max-w-md space-y-4">
       <div className="space-y-2">
         <Label htmlFor="user-name">Nombre</Label>
         <Input
           id="user-name"
           value={values.name}
           onChange={(e) => setValues({ ...values, name: e.target.value })}
+          autoComplete="name"
           aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? 'user-name-error' : undefined}
         />
-        {errors.name && <p className="text-destructive text-sm">{errors.name}</p>}
+        {errors.name && (
+          <p id="user-name-error" className="text-destructive text-sm">
+            {errors.name}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -63,12 +69,22 @@ export function UserForm({ initialValues, submitLabel, pending, serverError, onS
           type="email"
           value={values.email}
           onChange={(e) => setValues({ ...values, email: e.target.value })}
+          autoComplete="email"
           aria-invalid={!!errors.email}
+          aria-describedby={errors.email ? 'user-email-error' : undefined}
         />
-        {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
+        {errors.email && (
+          <p id="user-email-error" className="text-destructive text-sm">
+            {errors.email}
+          </p>
+        )}
       </div>
 
-      {serverError && <p className="text-destructive text-sm">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-destructive text-sm">
+          {serverError}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>

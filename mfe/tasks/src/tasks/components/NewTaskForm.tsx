@@ -25,7 +25,7 @@ export function NewTaskForm({ pending, onCreate }: Props) {
         aria-label="Nueva tarea"
       />
       <Button type="submit" disabled={pending}>
-        Agregar
+        {pending ? 'Agregando…' : 'Agregar'}
       </Button>
     </form>
   )

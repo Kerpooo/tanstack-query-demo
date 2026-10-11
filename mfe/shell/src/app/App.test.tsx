@@ -41,6 +41,15 @@ describe('App (shell)', () => {
     window.history.pushState({}, '', '/nada')
     render(<App />)
     expect(screen.getByText('Página no encontrada.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ir a Tareas' })).toHaveAttribute('href', '/tasks')
+  })
+
+  it('ofrece un enlace para saltar al contenido principal', () => {
+    render(<App />)
+    expect(screen.getByRole('link', { name: 'Saltar al contenido' })).toHaveAttribute(
+      'href',
+      '#contenido',
+    )
   })
 })
 
@@ -55,6 +64,7 @@ describe('App (shell) con un remote caído', () => {
     const { default: FreshApp } = await import('./App')
     render(<FreshApp />)
     expect(await screen.findByText(/No se pudo cargar el microfrontend «tasks»/)).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('link', { name: 'Usuarios' }))
     expect(await screen.findByText('Users remoto')).toBeInTheDocument()

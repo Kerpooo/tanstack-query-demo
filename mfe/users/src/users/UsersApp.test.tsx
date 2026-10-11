@@ -111,7 +111,7 @@ describe('crear usuario', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Crear usuario' }))
 
     expect(await screen.findByText('El nombre es obligatorio')).toBeInTheDocument()
-    expect(screen.getByText('Ingrese un correo válido')).toBeInTheDocument()
+    expect(screen.getByText('Escribe un correo válido, por ejemplo nombre@dominio.com')).toBeInTheDocument()
     expect(api.create).not.toHaveBeenCalled()
   })
 

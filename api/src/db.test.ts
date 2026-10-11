@@ -6,14 +6,14 @@ import { createDb, SEED_USER_COUNT } from './db.js'
 import { usersRepository } from './users.js'
 
 describe('createDb', () => {
-  it('no duplica la semilla al reabrir una base existente', () => {
+  it('no duplica la semilla al reabrir una base existente', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'poc-rq-'))
     try {
       const path = join(dir, 'sub', 'app.db')
-      const first = createDb(path, { seed: true })
+      const first = await createDb(path, { seed: true })
       first.close()
-      const second = createDb(path, { seed: true })
-      expect(usersRepository(second).list()).toHaveLength(SEED_USER_COUNT)
+      const second = await createDb(path, { seed: true })
+      expect(await usersRepository(second).list()).toHaveLength(SEED_USER_COUNT)
       second.close()
     } finally {
       rmSync(dir, { recursive: true, force: true })

@@ -59,6 +59,33 @@ test.describe('Microfrontend de tareas', () => {
     await page.getByRole('button', { name: `Eliminar ${title}` }).click()
     await expect(page.getByText(title)).toHaveCount(0)
   })
+
+  test('asignar y quitar usuarios de una tarea', async ({ page }) => {
+    const title = unique('Asignada')
+    await page.goto('/tasks')
+    await page.getByLabel('Nueva tarea').fill(title)
+    await page.getByRole('button', { name: 'Agregar' }).click()
+
+    await page.getByRole('button', { name: `Asignar usuarios a ${title}` }).click()
+    const options = page.getByRole('listbox', { name: `Usuarios para ${title}` })
+    await page.getByRole('combobox', { name: 'Buscar usuario' }).fill('ana@')
+    await options.getByRole('option', { name: 'Ana Torres' }).click()
+    await expect(options.getByRole('option', { name: 'Ana Torres' })).toHaveAttribute('aria-checked', 'true')
+    await page.keyboard.press('Escape')
+
+    const assignees = page.getByRole('list', { name: `Asignados a ${title}` })
+    await expect(assignees).toHaveText('Ana Torres')
+
+    await page.reload()
+    await expect(assignees).toHaveText('Ana Torres')
+
+    await page.getByRole('button', { name: `Asignar usuarios a ${title}` }).click()
+    await options.getByRole('option', { name: 'Ana Torres' }).click()
+    await page.keyboard.press('Escape')
+    await expect(assignees).toHaveCount(0)
+
+    await page.getByRole('button', { name: `Eliminar ${title}` }).click()
+  })
 })
 
 test.describe('Microfrontend de usuarios (CRUD en páginas)', () => {
@@ -108,7 +135,7 @@ test.describe('Microfrontend de usuarios (CRUD en páginas)', () => {
     await page.getByLabel('Correo').fill('no-es-correo')
     await page.getByRole('button', { name: 'Crear usuario' }).click()
     await expect(page.getByText('El nombre es obligatorio')).toBeVisible()
-    await expect(page.getByText('Ingrese un correo válido')).toBeVisible()
+    await expect(page.getByText('Escribe un correo válido, por ejemplo nombre@dominio.com')).toBeVisible()
     await expect(page).toHaveURL(/\/users\/new$/)
   })
 
@@ -130,7 +157,7 @@ test.describe('Microfrontend de usuarios (CRUD en páginas)', () => {
   test('muestra un error si la API no responde', async ({ page }) => {
     await page.route('http://localhost:3000/users', (route) => route.abort())
     await page.goto('/users')
-    await expect(page.getByText(/Error:/)).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText('No se pudieron cargar los usuarios')
   })
 })
 

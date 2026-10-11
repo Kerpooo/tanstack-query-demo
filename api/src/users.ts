@@ -10,38 +10,62 @@ export interface User {
   email: string
 }
 
+const toUser = (r: Record<string, unknown>): User => ({
+  id: String(r.id),
+  name: String(r.name),
+  email: String(r.email),
+})
+
 export const usersRepository = (db: Db) => ({
-  list: (): User[] => db.prepare('SELECT id, name, email FROM users ORDER BY name').all() as unknown as User[],
+  async list(): Promise<User[]> {
+    const { rows } = await db.execute('SELECT id, name, email FROM users ORDER BY name')
+    return rows.map(toUser)
+  },
 
   /** Página ordenada por nombre. `nextCursor` es el offset siguiente o `null` si no hay más. */
-  page(limit: number, offset: number): { items: User[]; nextCursor: string | null } {
-    const rows = db
-      .prepare('SELECT id, name, email FROM users ORDER BY name LIMIT ? OFFSET ?')
-      .all(limit + 1, offset) as unknown as User[]
+  async page(limit: number, offset: number): Promise<{ items: User[]; nextCursor: string | null }> {
+    const { rows } = await db.execute({
+      sql: 'SELECT id, name, email FROM users ORDER BY name LIMIT ? OFFSET ?',
+      args: [limit + 1, offset],
+    })
     return {
-      items: rows.slice(0, limit),
+      items: rows.slice(0, limit).map(toUser),
       nextCursor: rows.length > limit ? String(offset + limit) : null,
     }
   },
 
-  get: (id: string): User | undefined =>
-    db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(id) as User | undefined,
+  async get(id: string): Promise<User | undefined> {
+    const { rows } = await db.execute({ sql: 'SELECT id, name, email FROM users WHERE id = ?', args: [id] })
+    return rows[0] && toUser(rows[0])
+  },
 
-  create(input: Omit<User, 'id'>): User {
+  async create(input: Omit<User, 'id'>): Promise<User> {
     const user: User = { id: randomUUID(), ...input }
-    db.prepare('INSERT INTO users (id, name, email) VALUES (?, ?, ?)').run(user.id, user.name, user.email)
+    await db.execute({
+      sql: 'INSERT INTO users (id, name, email) VALUES (?, ?, ?)',
+      args: [user.id, user.name, user.email],
+    })
     return user
   },
 
-  update(id: string, changes: Partial<Omit<User, 'id'>>): User | undefined {
-    const current = this.get(id)
+  async update(id: string, changes: Partial<Omit<User, 'id'>>): Promise<User | undefined> {
+    const current = await this.get(id)
     if (!current) return undefined
     const next = { ...current, ...changes }
-    db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(next.name, next.email, id)
+    await db.execute({ sql: 'UPDATE users SET name = ?, email = ? WHERE id = ?', args: [next.name, next.email, id] })
     return next
   },
 
-  remove: (id: string): boolean => Number(db.prepare('DELETE FROM users WHERE id = ?').run(id).changes) > 0,
+  async remove(id: string): Promise<boolean> {
+    const [, deleted] = await db.batch(
+      [
+        { sql: 'DELETE FROM task_assignees WHERE user_id = ?', args: [id] },
+        { sql: 'DELETE FROM users WHERE id = ?', args: [id] },
+      ],
+      'write',
+    )
+    return deleted!.rowsAffected > 0
+  },
 })
 
 const createSchema = z.object({
@@ -62,31 +86,31 @@ const duplicated = { error: 'Ya existe un usuario con ese correo' }
 export const usersRoutes = (db: Db) => {
   const repo = usersRepository(db)
   return new Hono()
-    .get('/', zValidator('query', pageQuerySchema), (c) => {
+    .get('/', zValidator('query', pageQuerySchema), async (c) => {
       const { limit, cursor } = c.req.valid('query')
-      if (limit === undefined && cursor === undefined) return c.json(repo.list())
-      return c.json(repo.page(limit ?? 10, cursor ?? 0))
+      if (limit === undefined && cursor === undefined) return c.json(await repo.list())
+      return c.json(await repo.page(limit ?? 10, cursor ?? 0))
     })
-    .get('/:id', (c) => {
-      const user = repo.get(c.req.param('id'))
+    .get('/:id', async (c) => {
+      const user = await repo.get(c.req.param('id'))
       return user ? c.json(user) : c.json(notFound, 404)
     })
-    .post('/', zValidator('json', createSchema), (c) => {
+    .post('/', zValidator('json', createSchema), async (c) => {
       try {
-        return c.json(repo.create(c.req.valid('json')), 201)
+        return c.json(await repo.create(c.req.valid('json')), 201)
       } catch (err) {
         if (isUniqueViolation(err)) return c.json(duplicated, 409)
         throw err
       }
     })
-    .patch('/:id', zValidator('json', updateSchema), (c) => {
+    .patch('/:id', zValidator('json', updateSchema), async (c) => {
       try {
-        const user = repo.update(c.req.param('id'), c.req.valid('json'))
+        const user = await repo.update(c.req.param('id'), c.req.valid('json'))
         return user ? c.json(user) : c.json(notFound, 404)
       } catch (err) {
         if (isUniqueViolation(err)) return c.json(duplicated, 409)
         throw err
       }
     })
-    .delete('/:id', (c) => (repo.remove(c.req.param('id')) ? c.body(null, 204) : c.json(notFound, 404)))
+    .delete('/:id', async (c) => ((await repo.remove(c.req.param('id'))) ? c.body(null, 204) : c.json(notFound, 404)))
 }

@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestApp } from './test-utils.js'
 
-let app: ReturnType<typeof createTestApp>
-beforeEach(() => {
-  app = createTestApp()
+let app: Awaited<ReturnType<typeof createTestApp>>
+beforeEach(async () => {
+  app = await createTestApp()
 })
 
 describe('/demo', () => {

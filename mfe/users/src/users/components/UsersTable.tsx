@@ -12,11 +12,18 @@ interface Props {
 
 export function UsersTable({ users, onDelete }: Props) {
   if (users.length === 0) {
-    return <p className="text-muted-foreground text-sm">No hay usuarios todavía.</p>
+    return (
+      <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+        <p>No hay usuarios todavía.</p>
+        <Button asChild variant="outline" size="sm">
+          <Link to={usersPaths.create}>Crear el primero</Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
-    <Table>
+    <Table aria-label="Usuarios">
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>
@@ -28,7 +35,7 @@ export function UsersTable({ users, onDelete }: Props) {
         {users.map((user) => (
           <TableRow key={user.id}>
             <TableCell className="font-medium">{user.name}</TableCell>
-            <TableCell>{user.email}</TableCell>
+            <TableCell className="text-muted-foreground">{user.email}</TableCell>
             <TableCell className="space-x-2 text-right">
               <Button variant="outline" size="sm" asChild>
                 <Link to={usersPaths.edit(user.id)} aria-label={`Editar ${user.name}`}>

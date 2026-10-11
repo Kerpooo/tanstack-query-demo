@@ -22,6 +22,24 @@ test.describe('API REST', () => {
     expect((await request.get(`${API}/tasks/${task.id}`)).status()).toBe(404)
   })
 
+  test('asigna usuarios a una tarea y rechaza ids inexistentes', async ({ request }) => {
+    const users: { id: string; name: string }[] = await (await request.get(`${API}/users`)).json()
+    const ana = users.find((u) => u.name === 'Ana Torres')!
+
+    const created = await request.post(`${API}/tasks`, { data: { title: 'e2e asignada', assigneeIds: [ana.id] } })
+    expect(created.status()).toBe(201)
+    const task = await created.json()
+    expect(task.assignees).toEqual([{ id: ana.id, name: 'Ana Torres' }])
+
+    const invalid = await request.patch(`${API}/tasks/${task.id}`, { data: { assigneeIds: ['no-existe'] } })
+    expect(invalid.status()).toBe(400)
+
+    const cleared = await request.patch(`${API}/tasks/${task.id}`, { data: { assigneeIds: [] } })
+    expect((await cleared.json()).assignees).toEqual([])
+
+    expect((await request.delete(`${API}/tasks/${task.id}`)).status()).toBe(204)
+  })
+
   test('valida el cuerpo al crear una tarea', async ({ request }) => {
     const res = await request.post(`${API}/tasks`, { data: { title: '' } })
     expect(res.status()).toBe(400)

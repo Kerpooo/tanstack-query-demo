@@ -26,7 +26,8 @@ export default defineConfig({
       // Parte siempre de una base limpia (con los usuarios de ejemplo).
       command: `rm -f "${E2E_DB}" "${E2E_DB}-wal" "${E2E_DB}-shm"; pnpm dev`,
       cwd: '../api',
-      env: { DB_PATH: E2E_DB },
+      // TURSO_DATABASE_URL vacío: evita que un api/.env apunte los e2e a la base remota.
+      env: { DB_PATH: E2E_DB, TURSO_DATABASE_URL: '' },
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
     },
