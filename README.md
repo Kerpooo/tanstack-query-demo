@@ -2,7 +2,7 @@
 
 Prueba de concepto de **microfrontends con Module Federation** que comparten un único **TanStack Query (React Query)**, con una API REST en Hono sobre SQLite (Turso/libSQL) y una documentación interactiva de TanStack Query con 21 conceptos explicados y demos en vivo.
 
-**Demo:** https://tanstack-query-demo-shell.kevvek.workers.dev
+**Demo:** https://poc-tanstack-query.kevvek.xyz
 
 ## ¿Qué demuestra?
 
@@ -122,15 +122,15 @@ Cada concepto vive en `mfe/query-lab/src/<concepto>/` con `docs.md` (la explicac
 
 ## Despliegue (Cloudflare Workers)
 
-Todo se publica en Cloudflare Workers con wrangler, que ya está instalado como dependencia de desarrollo:
+Todo se publica en Cloudflare Workers con wrangler (ya instalado como dependencia de desarrollo), con subdominios de `kevvek.xyz` declarados en cada `wrangler.jsonc` (`*.workers.dev` está desactivado porque muchas redes corporativas lo bloquean):
 
 | Proyecto | URL |
 |---|---|
-| shell (la app) | https://tanstack-query-demo-shell.kevvek.workers.dev |
-| tasks | https://tanstack-query-demo-tasks.kevvek.workers.dev |
-| users | https://tanstack-query-demo-users.kevvek.workers.dev |
-| query-lab | https://tanstack-query-demo-query-lab.kevvek.workers.dev |
-| API | https://tanstack-query-demo-api.kevvek.workers.dev |
+| shell (la app) | https://poc-tanstack-query.kevvek.xyz |
+| tasks | https://poc-tanstack-query-tasks.kevvek.xyz |
+| users | https://poc-tanstack-query-users.kevvek.xyz |
+| query-lab | https://poc-tanstack-query-lab.kevvek.xyz |
+| API | https://poc-tanstack-query-api.kevvek.xyz |
 
 La primera vez, inicia sesión y carga los secretos de Turso de la API:
 

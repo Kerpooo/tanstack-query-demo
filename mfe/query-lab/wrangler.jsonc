@@ -2,6 +2,9 @@
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "tanstack-query-demo-query-lab",
   "compatibility_date": "2026-10-01",
+  // Dominio propio: *.workers.dev está bloqueado en algunas redes corporativas.
+  "routes": [{ "pattern": "poc-tanstack-query-lab.kevvek.xyz", "custom_domain": true }],
+  "workers_dev": false,
   // Solo archivos estáticos (sin Worker). "single-page-application" responde
   // index.html en las rutas del router (deep links como /users/1/edit).
   "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }

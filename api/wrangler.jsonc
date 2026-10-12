@@ -3,6 +3,9 @@
   "name": "tanstack-query-demo-api",
   "main": "src/worker.ts",
   "compatibility_date": "2026-10-01",
+  // Dominio propio: *.workers.dev está bloqueado en algunas redes corporativas.
+  "routes": [{ "pattern": "poc-tanstack-query-api.kevvek.xyz", "custom_domain": true }],
+  "workers_dev": false,
   // node:crypto (randomUUID) y node:fs (solo se usa con archivos locales).
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true }

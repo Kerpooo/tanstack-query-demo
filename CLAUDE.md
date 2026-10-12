@@ -58,10 +58,10 @@ Ambos gestores bloquean los scripts de instalación de dependencias: `esbuild` y
 
 ## Despliegue (Cloudflare Workers)
 
-Cuenta `kevvek.workers.dev`; todo se despliega con wrangler (devDependency en `api/` y en `mfe/`; requiere `pnpm exec wrangler login`).
+Dominio propio `kevvek.xyz` (zona en la misma cuenta): cada Worker declara `routes` con `custom_domain: true` (Cloudflare crea DNS y certificado al desplegar) y `workers_dev: false`, porque `*.workers.dev` está bloqueado en la red corporativa donde se comparte la demo. Los subdominios son de un solo nivel (`poc-tanstack-query-<x>.kevvek.xyz`) para que los cubra el certificado universal. Todo se despliega con wrangler (devDependency en `api/` y en `mfe/`; requiere `pnpm exec wrangler login`).
 
-- **API**: `cd api && pnpm run deploy` → `https://tanstack-query-demo-api.kevvek.workers.dev`. Entrada `src/worker.ts` (crea la app en la primera petición con los secretos de `env`; `index.ts` queda para Node local) y `wrangler.jsonc` con `nodejs_compat`. Secretos: `pnpm exec wrangler secret bulk .env` (o `secret put TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`). `wrangler dev` también funciona y lee `api/.env`. En Workers `@libsql/client` resuelve a su versión web (solo URLs `libsql://`/`https://`, no archivos).
-- **Microfrontends**: `cd mfe && pnpm run deploy` compila en modo production (lee `mfe/.env.production`) y despliega los cuatro como Workers de solo assets (`tanstack-query-demo-<paquete>`). `not_found_handling: "single-page-application"` en cada `wrangler.jsonc` resuelve los deep links. Si cambia una URL, hay que volver a desplegar quien la usa (se fija al compilar).
+- **API**: `cd api && pnpm run deploy` → `https://poc-tanstack-query-api.kevvek.xyz`. Entrada `src/worker.ts` (crea la app en la primera petición con los secretos de `env`; `index.ts` queda para Node local) y `wrangler.jsonc` con `nodejs_compat`. Secretos: `pnpm exec wrangler secret bulk .env` (o `secret put TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN`). `wrangler dev` también funciona y lee `api/.env`. En Workers `@libsql/client` resuelve a su versión web (solo URLs `libsql://`/`https://`, no archivos).
+- **Microfrontends**: `cd mfe && pnpm run deploy` compila en modo production (lee `mfe/.env.production`) y despliega los cuatro como Workers de solo assets (Worker `tanstack-query-demo-<paquete>`, dominio `poc-tanstack-query[-tasks|-users|-lab].kevvek.xyz`). `not_found_handling: "single-page-application"` en cada `wrangler.jsonc` resuelve los deep links. Si cambia una URL, hay que volver a desplegar quien la usa (se fija al compilar).
 - `/demo/flaky` guarda su contador en memoria: en Workers cada isolate tiene el suyo, así que puede comportarse de forma irregular.
 
 ## Arquitectura
