@@ -13,6 +13,14 @@ describe('App (shell)', () => {
     expect(window.location.pathname).toBe('/tasks')
   })
 
+  it('enlaza al repositorio de GitHub en una pestaña nueva', () => {
+    render(<App />)
+    const link = screen.getByRole('link', { name: /ver el código en github/i })
+    expect(link).toHaveAttribute('href', 'https://github.com/Kerpooo/tanstack-query-demo')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noreferrer')
+  })
+
   it('navega entre microfrontends con el menú', async () => {
     render(<App />)
     await userEvent.click(await screen.findByRole('link', { name: 'Usuarios' }))

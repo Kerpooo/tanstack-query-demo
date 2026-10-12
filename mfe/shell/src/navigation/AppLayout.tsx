@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { FetchProgress } from './FetchProgress'
+import { GitHubLink } from './GitHubLink'
 import { MainNav } from './MainNav'
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -15,7 +16,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <header className="bg-card border-b">
         <div className="mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-x-8 px-4 sm:px-6">
           <h1 className="py-4 text-lg font-bold tracking-tight">poc-rq</h1>
-          <MainNav />
+          <div className="flex items-end gap-2">
+            <MainNav />
+            <GitHubLink />
+          </div>
         </div>
       </header>
       <main id="contenido" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-6 outline-none sm:px-6 sm:py-8">{children}</main>
